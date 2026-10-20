@@ -1,78 +1,105 @@
-# Grekom NetMaster
+# Grekom NetMaster v2
 
-Aplikacja Android do walk-testów RF (LTE / 5G NR / 3G / 2G) dla instalacji DAS i sieci T-Mobile.
+Walk-test RF (LTE / 5G NR / 3G / 2G) z lokalizacją stacji bazowych, dla DAS i sieci T-Mobile.
 
-## Funkcje
+## Co nowego w v2
 
-- Odczyt parametrów serving cell: **RSRP, RSRQ, SINR, RSSI, EARFCN, pasmo (B1/B3/B7/B8/B20/B28, n78, n1...), PCI, TAC, Cell ID**
-- Automatyczna detekcja pasma na podstawie EARFCN
-- Wbudowany speed test (download/upload/ping) przez serwery Cloudflare
-- GPS każdego pomiaru
-- Zdjęcie z aparatu dołączone do pomiaru
-- Pole notatek na każdy punkt
-- **Zbiorczy PDF** z całego walk-testu: strona tytułowa z logo Grekom, tabela zbiorcza, strona szczegółowa per punkt
+- **Niebieski motyw** (brand Grekom)
+- **Layout CellMapper-style** - duży nagłówek z operatorem/pasmem, grid parametrów, wskaźnik siły sygnału
+- **Lista sąsiednich komórek** (neighbor cells) z PCI, pasmem, RSRP/RSRQ/SINR
+- **Lokalizacja stacji bazowej** z OpenCellID + opcja własnego CSV
+- **Mapa OpenStreetMap** z pinezką Twojej lokalizacji + markerem stacji + linią do niej
+- **Dziennik zmian** (handover komórki, zmiana pasma, zmiana technologii, alarm słabego sygnału)
+- **Drive-test** - automatyczne pomiary co X sekund
+- **Export CSV** oprócz PDF
+- **Kompas + azymut** do serving cell
+- Wszystkie pasma: 700/800/900/1800/2100/2600 + n78/n1/n28 (5G)
 
-## Jak zbudować APK (bez instalacji Android Studio)
+## Jak zbudować APK
 
 Projekt ma skonfigurowany **GitHub Actions** - APK buduje się automatycznie w chmurze.
 
-### Krok po kroku
+### Jeśli masz już repo z v1:
 
-1. **Załóż konto na github.com** (darmowe)
-2. Kliknij **New repository** → nazwij np. `grekom-netmaster` → **Create**
-3. Na stronie repo kliknij **"uploading an existing file"**
-4. **Przeciągnij do przeglądarki całą zawartość tego folderu** (nie sam folder — jego zawartość: `app/`, `.github/`, `build.gradle.kts`, `settings.gradle.kts`, `gradle.properties`, `gradle/`, `README.md`)
-5. Na dole wpisz np. "initial commit" i kliknij **Commit changes**
-6. Przejdź do zakładki **Actions** w swoim repo → zobaczysz uruchomiony build **"Build APK"** (3-5 minut)
-7. Po zakończeniu kliknij w build → na dole w sekcji **Artifacts** pobierz **GrekomNetMaster-debug** (ZIP z APK)
-8. Rozpakuj i przerzuć APK na telefon (email, Google Drive, kabel USB)
-9. Na telefonie włącz **"Instalowanie z nieznanych źródeł"** dla przeglądarki/plików i zainstaluj APK
+1. W swoim repo kliknij `gekonnetmaster` (albo jak nazwałeś) → **Add file** → **Upload files**
+2. Przeciągnij **całą zawartość tego folderu** (wszystko oprócz samego folderu nadrzędnego)
+3. GitHub zapyta czy nadpisać istniejące - **tak, nadpisz**
+4. **Commit changes** - stare pliki z v1 zostaną zastąpione, Actions zbuduje nowy APK
 
-### Alternatywa: Android Studio
+### Jeśli robisz od zera:
 
-Jeśli masz Android Studio: **File → Open** → wskaż ten folder → **Run** (zielony trójkąt).
+1. github.com → nowe repo (Public, bez README, bez .gitignore)
+2. Upload files → przeciągnij **zawartość** folderu z v2 (wszystkie foldery `app`, `.github`, `gradle` + pliki)
+3. Commit → zakładka **Actions** → poczekaj 3-5 min
+4. Pobierz **GrekomNetMaster-debug** z Artifacts
+5. Rozpakuj → zainstaluj APK na telefonie
+
+## OpenCellID klucz API (dla lokalizacji stacji)
+
+Lokalizacja stacji bazowych pokazuje się dopiero gdy wpiszesz darmowy klucz:
+
+1. Rejestracja: https://opencellid.org/register.php
+2. Po rejestracji dostaniesz klucz (zaczyna się od `pk.`)
+3. W apce: zakładka **Menu** → wklej klucz → **Zapisz**
+4. Pierwsza stacja się załaduje w ciągu kilku sekund (1000 zapytań/dzień za darmo)
+
+### Albo własny CSV T-Mobile
+
+Jeśli masz bazę stacji T-Mobile (np. eksport z ich dokumentacji):
+
+Format pliku:
+```
+cellid,lat,lon,adres
+58407953,50.06470,19.94500,Kraków Komasy 3 - wieża Tauron
+58407954,50.06500,19.94800,Kraków Komasy 5
+```
+
+Wklej do pola "CSV" w Menu → **Zapisz CSV**. Lokalny CSV ma pierwszeństwo przed OpenCellID.
 
 ## Wymagane uprawnienia
 
-Aplikacja prosi przy pierwszym uruchomieniu o:
-- **Lokalizacja (precyzyjna)** — GPS do oznaczenia punktów + wymagane przez Android do dostępu do info o komórce
-- **Telefon (READ_PHONE_STATE)** — dostęp do parametrów modemu
-- **Aparat** — zdjęcia punktów pomiarowych
+- **Lokalizacja (precyzyjna)** - GPS + Android wymaga tego do odczytu CellInfo
+- **Telefon (READ_PHONE_STATE)** - parametry modemu
+- **Aparat** - zdjęcia punktów pomiarowych
+- **Powiadomienia** - alarm słabego sygnału
 
-## Dodanie prawdziwego logo Grekom
+## Minimalne wymagania
 
-Projekt zawiera placeholder (`app/src/main/res/drawable/grekom_logo.xml`). Aby wstawić prawdziwy logo:
+- Android 8.0 (API 26) lub nowszy
+- 5G NR działa na Android 10+ (API 29)
+- GPS do dokładnych pomiarów
+- Czujnik kompasu (opcjonalny) do azymutu
 
-1. Usuń plik `grekom_logo.xml`
-2. Wrzuć plik PNG o nazwie **`grekom_logo.png`** (szer. ~600px, przezroczyste tło) do:
-   `app/src/main/res/drawable-xxhdpi/grekom_logo.png`
-3. Commit → GitHub Actions zbuduje nowy APK z Twoim logo
-
-## Notatki techniczne
-
-- **minSdk 26** (Android 8.0) — niektóre API `CellInfoLte.rssi` i NR wymagają API 29/30
-- Dla 5G: appka obsługuje `CellInfoNr` (SSRSRP/SSRSRQ/SSSINR) — działa na większości urządzeń z Android 10+
-- Speed test wykonuje: 25MB download + 5MB upload + 4x TCP ping do 1.1.1.1
-- PDF jest generowany lokalnie (Android `PdfDocument`), zapisywany w `cacheDir/pdfs/` i udostępniany przez FileProvider
-
-## Struktura
+## Struktura kodu
 
 ```
 app/src/main/java/pl/grekom/netmaster/
-├── MainActivity.kt              # entry point + permission handling
-├── WalkTestViewModel.kt         # stan walk-testu
+├── MainActivity.kt
+├── MainViewModel.kt
 ├── data/
-│   ├── Measurement.kt           # data classes
-│   └── BandLookup.kt            # EARFCN → pasmo
+│   ├── Measurement.kt       # RfSample, NeighborCell, MeasurementPoint, LogEntry
+│   └── BandLookup.kt        # EARFCN → pasmo (LTE + NR)
 ├── rf/
-│   └── RfCollector.kt           # TelephonyManager wrapper
+│   └── RfCollector.kt       # TelephonyManager + CellInfoLte/Nr/Wcdma/Gsm
+├── location/
+│   ├── CellLocator.kt       # OpenCellID API + CSV lookup + bearing/distance
+│   ├── Compass.kt           # TYPE_ROTATION_VECTOR sensor
+│   └── Settings.kt          # DataStore preferences
 ├── speedtest/
-│   └── SpeedTest.kt             # Cloudflare speedtest
+│   └── SpeedTest.kt         # Cloudflare speedtest
 ├── pdf/
-│   └── PdfGenerator.kt          # generowanie PDF
+│   └── PdfGenerator.kt      # Multi-page PDF z nagłówkami, zdjęciem, neighbors
+├── export/
+│   └── CsvExporter.kt       # CSV z pełnymi parametrami
 └── ui/
-    ├── AppRoot.kt               # Compose UI (ekrany + dialogi)
-    └── theme/                   # Material 3 theme
+    ├── AppRoot.kt           # Tab navigation
+    ├── theme/               # Blue theme + signal colors
+    └── screens/
+        ├── LiveScreen.kt    # CellMapper-style live view
+        ├── MapScreen.kt     # OSM map
+        ├── LogScreen.kt     # Diary of changes
+        ├── WalkTestScreen.kt# Punkty + export
+        └── SettingsScreen.kt# OpenCellID key + CSV + alert
 ```
 
 ## Licencja

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="grekom_red">#E60046</color>
+    <color name="brand_blue">#00529B</color>
+    <color name="brand_blue_dark">#003366</color>
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>
