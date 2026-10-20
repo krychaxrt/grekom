@@ -21,9 +21,31 @@ class RfCollector(private val context: Context) {
 
     data class Snapshot(val serving: RfSample, val neighbors: List<NeighborCell>)
 
+    /** Strip operator marketing suffixes: "T-Mobile.pl 30 lat" -> "T-Mobile". */
+    private fun cleanOperatorName(raw: String): String {
+        if (raw.isBlank() || raw == "-") return "-"
+        val s = raw.trim()
+        return when {
+            s.contains("T-Mobile", ignoreCase = true) || s.contains("TMPL", ignoreCase = true) -> "T-Mobile"
+            s.contains("Orange", ignoreCase = true) || s.contains("PLAY-ORANGE", ignoreCase = true) -> "Orange"
+            s.contains("Plus", ignoreCase = true) && !s.contains("Play", ignoreCase = true) -> "Plus"
+            s.contains("Play", ignoreCase = true) || s.contains("P4", ignoreCase = true) -> "Play"
+            s.contains("Netia", ignoreCase = true) -> "Netia"
+            s.contains("nju", ignoreCase = true) -> "nju mobile"
+            s.contains("Heyah", ignoreCase = true) -> "Heyah"
+            s.contains("Red Bull", ignoreCase = true) -> "Red Bull Mobile"
+            s.contains("Lycamobile", ignoreCase = true) -> "Lycamobile"
+            s.contains("Vectra", ignoreCase = true) -> "Vectra"
+            else -> s.replace(Regex("\\s*\\d+\\s*lat"), "")  // generic strip of "X lat"
+                     .replace(Regex("\\.pl", RegexOption.IGNORE_CASE), "")
+                     .trim()
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun snapshot(): Snapshot {
-        val operator = try { tm.networkOperatorName ?: "-" } catch (_: Exception) { "-" }
+        val rawOperator = try { tm.networkOperatorName ?: "-" } catch (_: Exception) { "-" }
+        val operator = cleanOperatorName(rawOperator)
         val mccMnc = try { tm.networkOperator ?: "-" } catch (_: Exception) { "-" }
 
         val cells: List<CellInfo> = try {

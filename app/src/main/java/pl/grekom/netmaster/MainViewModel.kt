@@ -18,6 +18,7 @@ import pl.grekom.netmaster.data.*
 import pl.grekom.netmaster.export.CsvExporter
 import pl.grekom.netmaster.location.AppSettings
 import pl.grekom.netmaster.location.CellLocator
+import pl.grekom.netmaster.location.StationDatabase
 import pl.grekom.netmaster.pdf.PdfGenerator
 import pl.grekom.netmaster.rf.RfCollector
 import pl.grekom.netmaster.speedtest.SpeedTest
@@ -39,6 +40,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _liveLocation = MutableStateFlow<Location?>(null)
     val liveLocation: StateFlow<Location?> = _liveLocation.asStateFlow()
+
+    /** Last 60 RSRP samples (one every ~2.5s = ~2.5 min). */
+    private val _rsrpHistory = MutableStateFlow<List<Int>>(emptyList())
+    val rsrpHistory: StateFlow<List<Int>> = _rsrpHistory.asStateFlow()
 
     private val _servingCellLocation = MutableStateFlow<CellLocation?>(null)
     val servingCellLocation: StateFlow<CellLocation?> = _servingCellLocation.asStateFlow()
@@ -68,10 +73,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var lastTech: String = ""
     private var alertRsrp: Int = -110
 
+    private val _nearbyStations = MutableStateFlow<List<Pair<StationDatabase.Station, Double>>>(emptyList())
+    val nearbyStations: StateFlow<List<Pair<StationDatabase.Station, Double>>> = _nearbyStations.asStateFlow()
+
     init {
         startLiveLoop()
         viewModelScope.launch {
             alertRsrp = AppSettings.alertRsrp(app)
+            StationDatabase.ensureLoaded(app)
         }
     }
 
@@ -82,6 +91,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val snap = rf.snapshot()
                 _liveRf.value = snap.serving
                 _liveNeighbors.value = snap.neighbors
+                if (snap.serving.rsrp != Int.MAX_VALUE) {
+                    _rsrpHistory.value = (_rsrpHistory.value + snap.serving.rsrp).takeLast(60)
+                }
                 detectChanges(snap.serving)
                 lookupStation(snap.serving)
                 refreshLocation()
@@ -93,8 +105,32 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     @SuppressLint("MissingPermission")
     private fun refreshLocation() {
         try {
-            fused.lastLocation.addOnSuccessListener { loc -> _liveLocation.value = loc }
+            fused.lastLocation.addOnSuccessListener { loc ->
+                _liveLocation.value = loc
+                loc?.let { refreshNearbyStations(it.latitude, it.longitude) }
+            }
         } catch (_: Exception) {}
+    }
+
+    private fun refreshNearbyStations(lat: Double, lon: Double) {
+        if (!StationDatabase.isLoaded) return
+        // 1500 m radius for map markers / city view
+        _nearbyStations.value = StationDatabase.findAllNear(lat, lon, 1500.0).take(50)
+        // Set serving-cell location if OpenCellID hasn't resolved it yet
+        if (_servingCellLocation.value == null) {
+            val operator = _liveRf.value.operator
+            val nearest = StationDatabase.findNearest(operator, lat, lon, 500.0)
+            if (nearest != null) {
+                val (s, dist) = nearest
+                _servingCellLocation.value = CellLocation(
+                    lat = s.lat,
+                    lon = s.lon,
+                    range = dist.toInt(),
+                    source = "UKE (szac.)",
+                    address = s.fullAddress()
+                )
+            }
+        }
     }
 
     private fun detectChanges(serving: RfSample) {

@@ -1,4 +1,8 @@
-# Grekom NetMaster v2
+# Grekom NetMaster v2.2
+
+**NOWOŚĆ v2.2:** wbudowana baza **8800 stacji UKE** (Małopolska, Podkarpackie, Śląskie) — Plus/Play/Orange/T-Mobile. Appka pokazuje najbliższą stację Twojego operatora po GPS, a na mapie markery wszystkich stacji w promieniu 1.5 km.
+
+
 
 Walk-test RF (LTE / 5G NR / 3G / 2G) z lokalizacją stacji bazowych, dla DAS i sieci T-Mobile.
 

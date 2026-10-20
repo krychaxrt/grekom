@@ -24,6 +24,7 @@ fun MapScreen(vm: MainViewModel) {
     val loc by vm.liveLocation.collectAsState()
     val station by vm.servingCellLocation.collectAsState()
     val rf by vm.liveRf.collectAsState()
+    val nearby by vm.nearbyStations.collectAsState()
 
     Box(Modifier.fillMaxSize()) {
         AndroidView(
@@ -39,6 +40,17 @@ fun MapScreen(vm: MainViewModel) {
             modifier = Modifier.fillMaxSize(),
             update = { map ->
                 map.overlays.clear()
+                // Nearby UKE stations as background markers (color per operator)
+                nearby.forEach { (s, _) ->
+                    val color = operatorColor(s.operator)
+                    val m = Marker(map).apply {
+                        position = GeoPoint(s.lat, s.lon)
+                        title = "${s.operator}: ${s.fullAddress()}"
+                        snippet = "Pasma: ${s.bands.joinToString(", ")} · Azymuty: ${s.azimuths.joinToString(", ")}°"
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                    }
+                    map.overlays.add(m)
+                }
                 loc?.let {
                     val you = GeoPoint(it.latitude, it.longitude)
                     val me = Marker(map).apply {
@@ -85,5 +97,35 @@ fun MapScreen(vm: MainViewModel) {
                 if (loc != null) Icon(Icons.Default.MyLocation, null, tint = MaterialTheme.colorScheme.primary)
             }
         }
+
+        // Legend bottom-right
+        Card(
+            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.95f))
+        ) {
+            Column(Modifier.padding(8.dp)) {
+                Text("Stacje UKE: ${nearby.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray)
+                listOf("T-Mobile" to AndroidColor.rgb(226, 0, 116),
+                    "Orange" to AndroidColor.rgb(255, 121, 0),
+                    "Plus" to AndroidColor.rgb(0, 160, 70),
+                    "Play" to AndroidColor.rgb(140, 50, 200)).forEach { (op, c) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(10.dp).background(Color(c)))
+                        Spacer(Modifier.width(4.dp))
+                        Text(op, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
+        }
     }
+}
+
+private fun operatorColor(operator: String): Int = when (operator) {
+    "T-Mobile" -> AndroidColor.rgb(226, 0, 116)
+    "Orange" -> AndroidColor.rgb(255, 121, 0)
+    "Plus" -> AndroidColor.rgb(0, 160, 70)
+    "Play" -> AndroidColor.rgb(140, 50, 200)
+    else -> AndroidColor.rgb(100, 100, 100)
 }
