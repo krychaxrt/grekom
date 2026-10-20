@@ -1,6 +1,7 @@
 package pl.grekom.netmaster.ui.screens
 
 import android.graphics.Color as AndroidColor
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
